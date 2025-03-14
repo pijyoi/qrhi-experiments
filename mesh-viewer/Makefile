@@ -1,9 +1,8 @@
-all: shaded.vert.qsb shaded.frag.qsb
+.SUFFIXES: .qsb
 
-shaded.vert.qsb: $*
-    pyside6-qsb --qt6 -o $@ $*
+objects = shaded.vert.qsb shaded.frag.qsb
 
-shaded.frag.qsb: $*
-    pyside6-qsb --qt6 -o $@ $*
+all: $(objects)
 
-
+$(objects): $*
+	pyside6-qsb --qt6 -o $@ $*

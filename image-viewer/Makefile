@@ -1,9 +1,8 @@
-all: texture.vert.qsb texture.frag.qsb
+.SUFFIXES: .qsb
 
-texture.vert.qsb: $*
-    pyside6-qsb --qt6 -o $@ $*
+objects = texture.vert.qsb texture.frag.qsb
 
-texture.frag.qsb: $*
-    pyside6-qsb --qt6 -o $@ $*
+all: $(objects)
 
-
+$(objects): $*
+	pyside6-qsb --qt6 -o $@ $*
