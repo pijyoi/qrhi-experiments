@@ -1,3 +1,4 @@
+import struct
 from PySide6 import QtCore, QtGui, QtWidgets
 
 class ImageRhiWidget(QtWidgets.QRhiWidget):
@@ -6,6 +7,7 @@ class ImageRhiWidget(QtWidgets.QRhiWidget):
         super().__init__(parent)
         self.m_rhi = None
         self.m_srb = None
+        self.m_ubuf = None
         self.m_texture = None
         self.m_sampler = None
         self.m_pipeline = None
@@ -30,6 +32,8 @@ class ImageRhiWidget(QtWidgets.QRhiWidget):
         self.m_sampler = None
         self.m_texture.destroy()
         self.m_texture = None
+        self.m_ubuf.destroy()
+        self.m_ubuf = None
         self.m_srb.destroy()
         self.m_srb = None
 
@@ -52,6 +56,14 @@ class ImageRhiWidget(QtWidgets.QRhiWidget):
 
         print("initialize")
 
+        self.m_ubuf = self.m_rhi.newBuffer(QtGui.QRhiBuffer.Dynamic, QtGui.QRhiBuffer.UniformBuffer, 4)
+        self.m_ubuf.create()
+
+        resourceUpdates = self.m_rhi.nextResourceUpdateBatch()
+        yscale = -1.0 if self.m_rhi.isYUpInNDC() else 1.0
+        resourceUpdates.updateDynamicBuffer(self.m_ubuf, 0, 4, struct.pack('f', yscale))
+        cb.resourceUpdate(resourceUpdates)
+
         self.m_texture = self.m_rhi.newTexture(QtGui.QRhiTexture.Format.RGBA8, self.qimage.size())
         self.m_texture.create()
         FI = QtGui.QRhiSampler.Filter
@@ -62,6 +74,7 @@ class ImageRhiWidget(QtWidgets.QRhiWidget):
         self.m_srb = self.m_rhi.newShaderResourceBindings()
         SRB = QtGui.QRhiShaderResourceBinding
         self.m_srb.setBindings([
+            SRB.uniformBuffer(0, SRB.VertexStage, self.m_ubuf),
             SRB.sampledTexture(0, SRB.FragmentStage, self.m_texture, self.m_sampler)
         ])
         self.m_srb.create()
