@@ -58,6 +58,11 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
             self.yaxis_rotate += diff.x()
             self.update()
 
+    def wheelEvent(self, ev):
+        delta = ev.angleDelta().x() or ev.angleDelta().y()
+        self.distance *= 0.999**delta
+        self.update()
+
     def setData(self, mesh):
         mesh.apply_translation(-mesh.bounds.mean(axis=0))
         self.distance = (mesh.extents**2).sum()**0.5
