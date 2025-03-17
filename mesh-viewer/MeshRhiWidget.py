@@ -1,5 +1,10 @@
+import pathlib
 import numpy as np
 from PySide6 import QtCore, QtGui, QtWidgets
+
+def load_shader(filename):
+    pathname = pathlib.Path(__file__).parent / filename
+    return QtGui.QShader.fromSerialized(pathname.read_bytes())
 
 class MeshRhiWidget(QtWidgets.QRhiWidget):
 
@@ -20,8 +25,8 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.distance = 0
         self.need_upload = None     # None means no data
 
-        self.vert_shader = QtGui.QShader.fromSerialized(open("shaded.vert.qsb", "rb").read())
-        self.frag_shader = QtGui.QShader.fromSerialized(open("shaded.frag.qsb", "rb").read())
+        self.vert_shader = load_shader("shaded.vert.qsb")
+        self.frag_shader = load_shader("shaded.frag.qsb")
 
     def releaseResources(self):
         print('releaseResources')

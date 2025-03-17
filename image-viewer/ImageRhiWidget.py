@@ -1,5 +1,10 @@
+import pathlib
 import struct
 from PySide6 import QtCore, QtGui, QtWidgets
+
+def load_shader(filename):
+    pathname = pathlib.Path(__file__).parent / filename
+    return QtGui.QShader.fromSerialized(pathname.read_bytes())
 
 class ImageRhiWidget(QtWidgets.QRhiWidget):
 
@@ -12,8 +17,8 @@ class ImageRhiWidget(QtWidgets.QRhiWidget):
         self.m_sampler = None
         self.m_pipeline = None
 
-        self.vert_shader = QtGui.QShader.fromSerialized(open("texture.vert.qsb", "rb").read())
-        self.frag_shader = QtGui.QShader.fromSerialized(open("texture.frag.qsb", "rb").read())
+        self.vert_shader = load_shader("texture.vert.qsb")
+        self.frag_shader = load_shader("texture.frag.qsb")
 
         self.setData(None)
 
