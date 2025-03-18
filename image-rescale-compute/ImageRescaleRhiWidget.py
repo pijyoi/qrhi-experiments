@@ -134,9 +134,9 @@ class ImageRescaleRhiWidget(QtWidgets.QRhiWidget):
         SRB = QtGui.QRhiShaderResourceBinding
         self.m_compute_srb.setBindings([
             SRB.uniformBuffer(0, SRB.ComputeStage, self.m_ubuf),
-            SRB.bufferLoad(0, SRB.ComputeStage, self.m_ssbo),
-            SRB.imageStore(0, SRB.ComputeStage, self.m_texture, 0),
-            SRB.sampledTexture(0, SRB.ComputeStage, self.m_texture_lut, self.m_sampler_lut)
+            SRB.sampledTexture(1, SRB.ComputeStage, self.m_texture_lut, self.m_sampler_lut),
+            SRB.bufferLoad(2, SRB.ComputeStage, self.m_ssbo),
+            SRB.imageStore(3, SRB.ComputeStage, self.m_texture, 0),
         ])
         self.m_compute_srb.create()
 
