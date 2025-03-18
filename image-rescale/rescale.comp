@@ -1,0 +1,31 @@
+#version 440
+
+layout(local_size_x = 32, local_size_y = 8) in;
+layout(binding = 0) uniform highp sampler2D tex_lut;
+layout(rgba8, binding = 0) writeonly uniform highp image2D imgOutput;
+layout(std430, binding = 0) readonly buffer bufferBlock
+{
+    float imgInput[];
+};
+
+layout(std140, binding = 0) uniform buf {
+    vec2 u_minmax;
+    float u_yscale;
+};
+
+void main() {
+    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
+    if (any(greaterThanEqual(texelCoord, imageSize(imgOutput)))) {
+        return;
+    }
+    int idx = texelCoord.y * imageSize(imgOutput).x + texelCoord.x;
+
+    float ivalue = imgInput[idx];
+
+    ivalue = (ivalue - u_minmax.x) / (u_minmax.y - u_minmax.x);
+    ivalue = clamp(ivalue, 0.0, 1.0);
+
+    vec4 ovalue = texture(tex_lut, vec2(ivalue, 0));
+
+    imageStore(imgOutput, texelCoord, ovalue);
+}
