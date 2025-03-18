@@ -6,35 +6,6 @@ import pyqtgraph as pg
 
 from ImageRescaleRhiWidget import ImageRescaleRhiWidget
 
-parser = argparse.ArgumentParser()
-parser.add_argument('filename', nargs='?')
-parser.add_argument('--size', type=int, default=1024)
-parser.add_argument('--api', choices=['opengl', 'vulkan'])
-ARGS = parser.parse_args()
-
-if ARGS.filename is not None:
-    qimage = QtGui.QImage(ARGS.filename)
-    print(qimage.size())
-    print(qimage.format())
-    qimage.convertTo(QtGui.QImage.Format.Format_Grayscale8)
-    print('converted')
-    img = pg.functions.ndarray_from_qimage(qimage).astype(np.float32)
-    print(img.shape)
-else:
-    rng = np.random.default_rng()
-    img = rng.rayleigh(size=(ARGS.size, ARGS.size)).astype(np.float32)
-
-
-def parse_api(api : str) -> QtWidgets.QRhiWidget.Api | None:
-    match api:
-        case 'opengl':
-            out = QtWidgets.QRhiWidget.Api.OpenGL
-        case 'vulkan':
-            out = QtWidgets.QRhiWidget.Api.Vulkan
-        case _:
-            out = None
-    return out
-
 
 class Widget(QtWidgets.QWidget):
     def __init__(self, image,
@@ -73,8 +44,41 @@ class Widget(QtWidgets.QWidget):
     def onLevelsChanged(self, hist):
         self._rhi_widget.setLevels(hist.getLevels())
 
-app = pg.mkQApp()
-win = Widget(img, parse_api(ARGS.api))
-win.resize(800, 600)
-win.show()
-app.exec()
+
+def parse_api(api : str) -> QtWidgets.QRhiWidget.Api | None:
+    match api:
+        case 'opengl':
+            out = QtWidgets.QRhiWidget.Api.OpenGL
+        case 'vulkan':
+            out = QtWidgets.QRhiWidget.Api.Vulkan
+        case _:
+            out = None
+    return out
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('filename', nargs='?')
+    parser.add_argument('--size', type=int, default=1024)
+    parser.add_argument('--api', choices=['opengl', 'vulkan'])
+    ARGS = parser.parse_args()
+
+    if ARGS.filename is not None:
+        qimage = QtGui.QImage(ARGS.filename)
+        print(qimage.size())
+        print(qimage.format())
+        qimage.convertTo(QtGui.QImage.Format.Format_Grayscale8)
+        print('converted')
+        img = pg.functions.ndarray_from_qimage(qimage).astype(np.float32)
+        print(img.shape)
+    else:
+        rng = np.random.default_rng()
+        img = rng.rayleigh(size=(ARGS.size, ARGS.size)).astype(np.float32)
+
+    app = pg.mkQApp()
+    win = Widget(img, parse_api(ARGS.api))
+    win.resize(800, 600)
+    win.show()
+    app.exec()
+
+if __name__ == '__main__':
+    main()
