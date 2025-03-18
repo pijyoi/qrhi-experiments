@@ -144,7 +144,7 @@ class PointsRhiWidget(QtWidgets.QRhiWidget):
         outputSize = self.renderTarget().pixelSize()
         mat_mvp = self.m_rhi.clipSpaceCorrMatrix()
         r = outputSize.width() / outputSize.height()
-        mat_mvp.perspective(45.0, r, 0.01, 1000.0)
+        mat_mvp.perspective(45.0, r, 0.01 * self.distance, 1000.0 * self.distance)
 
         mat_mvp *= mat_view
 
