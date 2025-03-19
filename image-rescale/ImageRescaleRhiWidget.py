@@ -10,6 +10,9 @@ class ImageRescaleRhiWidget(QtWidgets.QRhiWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
+
         self.m_rhi = None
 
         self.m_ubuf = None
@@ -32,6 +35,7 @@ class ImageRescaleRhiWidget(QtWidgets.QRhiWidget):
         self.setData(None)
         self.setLevels((0.0, 1.0))
         self.setLut(lut)
+        self.resetZoom()
 
     def releaseResources(self):
         print('releaseResources')
@@ -61,6 +65,36 @@ class ImageRescaleRhiWidget(QtWidgets.QRhiWidget):
         self.m_texture = None
         self.m_ubuf.destroy()
         self.m_ubuf = None
+
+    def resetZoom(self):
+        self.scale = 1.0
+        self.pan_dx = 0
+        self.pan_dy = 0
+        self.update()
+
+    def keyReleaseEvent(self, ev):
+        if ev.key() == QtCore.Qt.Key.Key_Home:
+            self.resetZoom()
+        else:
+            super().keyReleaseEvent(ev)
+
+    def mousePressEvent(self, ev):
+        self.mousePos = ev.position()
+
+    def mouseMoveEvent(self, ev):
+        lpos = ev.position()
+        diff = lpos - self.mousePos
+        self.mousePos = lpos
+
+        if ev.buttons() == QtCore.Qt.MouseButton.LeftButton:
+            self.pan_dx += diff.x()
+            self.pan_dy += diff.y()
+            self.update()
+
+    def wheelEvent(self, ev):
+        delta = ev.angleDelta().x() or ev.angleDelta().y()
+        self.scale /= 0.999**delta
+        self.update()
 
     def setData(self, image):
         if image is None:
@@ -92,7 +126,7 @@ class ImageRescaleRhiWidget(QtWidgets.QRhiWidget):
 
         print("initialize")
 
-        self.ubuf_data = np.zeros((1, 4), dtype=np.float32)
+        self.ubuf_data = np.zeros((5, 4), dtype=np.float32)
         self.m_ubuf = self.m_rhi.newBuffer(QtGui.QRhiBuffer.Dynamic, QtGui.QRhiBuffer.UniformBuffer, self.ubuf_data.nbytes)
         self.m_ubuf.create()
 
@@ -164,9 +198,11 @@ class ImageRescaleRhiWidget(QtWidgets.QRhiWidget):
             resourceUpdates.uploadTexture(self.m_texture_lut, qimage)
             self.lut_uploaded = True
 
-        yscale = -1.0 if self.m_rhi.isYUpInNDC() else 1.0
-        self.ubuf_data[0, 0:2] = np.array(self.levels)
-        self.ubuf_data[0, 2] = yscale
+        view = self.m_rhi.clipSpaceCorrMatrix()
+        view.scale(self.scale, -self.scale)   # y-flip
+        view.translate(self.pan_dx / w, self.pan_dy / h)
+        self.ubuf_data[0:4, 0:4] = np.array(view.data()).reshape((4, 4))
+        self.ubuf_data[4, 0:2] = np.array(self.levels)
         resourceUpdates.updateDynamicBuffer(self.m_ubuf, 0, self.ubuf_data.nbytes, self.ubuf_data)
 
         clearColor = QtGui.QColor.fromRgbF(0.0, 0.0, 0.0, 1.0)

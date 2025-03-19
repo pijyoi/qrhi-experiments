@@ -4,8 +4,8 @@ layout(location = 0) in vec2 v_texcoord;
 layout(location = 0) out vec4 fragColor;
 
 layout(std140, binding = 0) uniform buf {
+    mat4 u_view;
     vec2 u_minmax;
-    float u_yscale;
 };
 
 layout(binding = 1) uniform sampler2D tex_lut;
