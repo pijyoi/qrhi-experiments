@@ -156,9 +156,7 @@ class ImageRescaleRhiWidget(QtWidgets.QRhiWidget):
 
         if not self.data_uploaded:
             desc = QtGui.QRhiTextureSubresourceUploadDescription(self.image, self.image.nbytes)
-            entry = QtGui.QRhiTextureUploadEntry(0, 0, desc)
-            upload_desc = QtGui.QRhiTextureUploadDescription(entry)
-            resourceUpdates.uploadTexture(self.m_texture, upload_desc)
+            resourceUpdates.uploadTexture(self.m_texture, QtGui.QRhiTextureUploadEntry(0, 0, desc))
             self.data_uploaded = True
 
         if not self.lut_uploaded:
