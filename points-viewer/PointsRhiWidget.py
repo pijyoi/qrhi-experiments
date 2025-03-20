@@ -12,7 +12,7 @@ class PointsRhiWidget(QtWidgets.QRhiWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
 
         self.m_rhi = None
         self.m_vbuf = None
@@ -46,7 +46,12 @@ class PointsRhiWidget(QtWidgets.QRhiWidget):
         self.m_vbuf = None
 
     def keyReleaseEvent(self, ev):
-        super().keyReleaseEvent(ev)
+        if ev.key() == QtCore.Qt.Key.Key_Home:
+            self.xaxis_rotate = 0.0
+            self.yaxis_rotate = 0.0
+            self.update()
+        else:
+            super().keyReleaseEvent(ev)
 
     def mousePressEvent(self, ev):
         self.mousePos = ev.position()
