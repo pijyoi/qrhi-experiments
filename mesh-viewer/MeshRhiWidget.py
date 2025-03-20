@@ -23,6 +23,7 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
 
         self.xaxis_rotate = 0.0
         self.yaxis_rotate = 0.0
+        self.zaxis_zoom = 0.0
         self.distance = 0
         self.need_upload = None     # None means no data
 
@@ -52,6 +53,7 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         if ev.key() == QtCore.Qt.Key.Key_Home:
             self.xaxis_rotate = 0.0
             self.yaxis_rotate = 0.0
+            self.zaxis_zoom = 0.0
             self.update()
         else:
             super().keyReleaseEvent(ev)
@@ -71,7 +73,7 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
 
     def wheelEvent(self, ev):
         delta = ev.angleDelta().x() or ev.angleDelta().y()
-        self.distance *= 0.999**delta
+        self.zaxis_zoom += delta
         self.update()
 
     def setData(self, mesh):
@@ -142,8 +144,10 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         if self.need_upload is None:
             return
 
+        distance = self.distance * 0.999**self.zaxis_zoom
+
         mat_view = QtGui.QMatrix4x4()
-        mat_view.translate(0, 0, -self.distance)
+        mat_view.translate(0, 0, -distance)
         mat_view.rotate(QtGui.QQuaternion.fromEulerAngles(self.xaxis_rotate, self.yaxis_rotate, 0))
 
         mat_normal = mat_view.normalMatrix()
@@ -151,7 +155,7 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         outputSize = self.renderTarget().pixelSize()
         mat_mvp = self.m_rhi.clipSpaceCorrMatrix()
         r = outputSize.width() / outputSize.height()
-        mat_mvp.perspective(45.0, r, 0.01 * self.distance, 1000.0 * self.distance)
+        mat_mvp.perspective(45.0, r, 0.01 * distance, 1000.0 * distance)
 
         mat_mvp *= mat_view
 
