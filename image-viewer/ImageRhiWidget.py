@@ -1,3 +1,4 @@
+import logging
 import pathlib
 import struct
 from PySide6 import QtCore, QtGui, QtWidgets
@@ -27,7 +28,7 @@ class ImageRhiWidget(QtWidgets.QRhiWidget):
         self.resetZoom()
 
     def releaseResources(self):
-        print('releaseResources')
+        logging.debug("releaseResources")
 
         if self.m_pipeline is None:
             return
@@ -93,7 +94,7 @@ class ImageRhiWidget(QtWidgets.QRhiWidget):
         if self.m_pipeline is not None:
             return
 
-        print("initialize")
+        logging.debug("initialize")
 
         self.m_ubuf = self.m_rhi.newBuffer(QtGui.QRhiBuffer.Dynamic, QtGui.QRhiBuffer.UniformBuffer, 64)
         self.m_ubuf.create()

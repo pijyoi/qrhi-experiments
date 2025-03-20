@@ -1,3 +1,4 @@
+import logging
 import pathlib
 from PySide6 import QtCore, QtGui, QtWidgets
 import numpy as np
@@ -38,7 +39,7 @@ class ImageRescaleRhiWidget(QtWidgets.QRhiWidget):
         self.resetZoom()
 
     def releaseResources(self):
-        print('releaseResources')
+        logging.debug("releaseResources")
 
         if self.m_pipeline is None:
             return
@@ -124,7 +125,7 @@ class ImageRescaleRhiWidget(QtWidgets.QRhiWidget):
         if self.m_pipeline is not None:
             return
 
-        print("initialize")
+        logging.debug("initialize")
 
         self.ubuf_data = np.zeros((5, 4), dtype=np.float32)
         self.m_ubuf = self.m_rhi.newBuffer(QtGui.QRhiBuffer.Dynamic, QtGui.QRhiBuffer.UniformBuffer, self.ubuf_data.nbytes)

@@ -1,3 +1,4 @@
+import logging
 import pathlib
 import numpy as np
 from PySide6 import QtCore, QtGui, QtWidgets
@@ -29,7 +30,7 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.frag_shader = load_shader("shaded.frag.qsb")
 
     def releaseResources(self):
-        print('releaseResources')
+        logging.debug("releaseResources")
 
         if self.m_pipeline is None:
             return
@@ -88,7 +89,7 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         if self.m_pipeline is not None:
             return
         
-        print("initialize")
+        logging.debug("initialize")
 
         # don't call create on the buffers yet
         self.m_vbuf = self.m_rhi.newBuffer(QtGui.QRhiBuffer.Immutable, QtGui.QRhiBuffer.VertexBuffer, 0)

@@ -67,9 +67,7 @@ def main():
         print(qimage.size())
         print(qimage.format())
         qimage.convertTo(QtGui.QImage.Format.Format_Grayscale8)
-        print('converted')
         img = pg.functions.ndarray_from_qimage(qimage).astype(np.float32)
-        print(img.shape)
     else:
         rng = np.random.default_rng()
         img = rng.rayleigh(size=(ARGS.size, ARGS.size)).astype(np.float32)
