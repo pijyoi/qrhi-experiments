@@ -11,7 +11,7 @@ class ImageRescaleRhiWidget(QtWidgets.QRhiWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
 
         self.m_rhi = None
 
