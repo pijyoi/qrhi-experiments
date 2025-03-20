@@ -200,7 +200,7 @@ class ImageRescaleRhiWidget(QtWidgets.QRhiWidget):
 
         view = self.m_rhi.clipSpaceCorrMatrix()
         view.scale(self.scale, -self.scale)   # y-flip
-        view.translate(self.pan_dx / w, self.pan_dy / h)
+        view.translate(self.pan_dx * 2 / self.width(), self.pan_dy * 2 / self.height())
         self.ubuf_data[0:4, 0:4] = np.array(view.data()).reshape((4, 4))
         self.ubuf_data[4, 0:2] = np.array(self.levels)
         resourceUpdates.updateDynamicBuffer(self.m_ubuf, 0, self.ubuf_data.nbytes, self.ubuf_data)
