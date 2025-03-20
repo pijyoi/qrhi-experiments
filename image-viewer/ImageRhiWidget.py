@@ -10,6 +10,9 @@ class ImageRhiWidget(QtWidgets.QRhiWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+
         self.m_rhi = None
         self.m_srb = None
         self.m_ubuf = None
@@ -21,6 +24,7 @@ class ImageRhiWidget(QtWidgets.QRhiWidget):
         self.frag_shader = load_shader("texture.frag.qsb")
 
         self.setData(None)
+        self.resetZoom()
 
     def releaseResources(self):
         print('releaseResources')
@@ -42,6 +46,36 @@ class ImageRhiWidget(QtWidgets.QRhiWidget):
         self.m_srb.destroy()
         self.m_srb = None
 
+    def resetZoom(self):
+        self.scale = 1.0
+        self.pan_dx = 0
+        self.pan_dy = 0
+        self.update()
+
+    def keyReleaseEvent(self, ev):
+        if ev.key() == QtCore.Qt.Key.Key_Home:
+            self.resetZoom()
+        else:
+            super().keyReleaseEvent(ev)
+
+    def mousePressEvent(self, ev):
+        self.mousePos = ev.position()
+
+    def mouseMoveEvent(self, ev):
+        lpos = ev.position()
+        diff = lpos - self.mousePos
+        self.mousePos = lpos
+
+        if ev.buttons() == QtCore.Qt.MouseButton.LeftButton:
+            self.pan_dx += diff.x()
+            self.pan_dy += diff.y()
+            self.update()
+
+    def wheelEvent(self, ev):
+        delta = ev.angleDelta().x() or ev.angleDelta().y()
+        self.scale /= 0.999**delta
+        self.update()
+
     def setData(self, qimage):
         if qimage is None:
             qimage = QtGui.QImage(1, 1, QtGui.QImage.Format.Format_RGBA8888)
@@ -61,13 +95,8 @@ class ImageRhiWidget(QtWidgets.QRhiWidget):
 
         print("initialize")
 
-        self.m_ubuf = self.m_rhi.newBuffer(QtGui.QRhiBuffer.Dynamic, QtGui.QRhiBuffer.UniformBuffer, 4)
+        self.m_ubuf = self.m_rhi.newBuffer(QtGui.QRhiBuffer.Dynamic, QtGui.QRhiBuffer.UniformBuffer, 64)
         self.m_ubuf.create()
-
-        resourceUpdates = self.m_rhi.nextResourceUpdateBatch()
-        yscale = -1.0 if self.m_rhi.isYUpInNDC() else 1.0
-        resourceUpdates.updateDynamicBuffer(self.m_ubuf, 0, 4, struct.pack('f', yscale))
-        cb.resourceUpdate(resourceUpdates)
 
         self.m_texture = self.m_rhi.newTexture(QtGui.QRhiTexture.Format.RGBA8, self.qimage.size())
         self.m_texture.create()
@@ -107,11 +136,17 @@ class ImageRhiWidget(QtWidgets.QRhiWidget):
             self.m_texture.setPixelSize(self.qimage.size())
             self.m_texture.create()
 
-        resourceUpdates = None
+        resourceUpdates = self.m_rhi.nextResourceUpdateBatch()
+
         if not self.uploaded:
-            resourceUpdates = self.m_rhi.nextResourceUpdateBatch()
             resourceUpdates.uploadTexture(self.m_texture, self.qimage)
             self.uploaded = True
+
+        view = self.m_rhi.clipSpaceCorrMatrix()
+        view.scale(self.scale, -self.scale)   # y-flip
+        view.translate(self.pan_dx * 2 / self.width(), self.pan_dy * 2 / self.height())
+        ubuf_data = struct.pack('16f', *view.data())
+        resourceUpdates.updateDynamicBuffer(self.m_ubuf, 0, len(ubuf_data), ubuf_data)
 
         clearColor = QtGui.QColor.fromRgbF(0.0, 0.0, 0.0, 1.0)
         cv = QtGui.QRhiDepthStencilClearValue(1.0, 0)
