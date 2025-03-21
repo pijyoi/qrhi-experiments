@@ -21,14 +21,13 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.m_srb = None
         self.m_pipeline = None
 
-        self.xaxis_rotate = 0.0
-        self.yaxis_rotate = 0.0
-        self.zaxis_zoom = 0.0
-        self.distance = 0
-        self.need_upload = None     # None means no data
-
         self.vert_shader = load_shader("shaded.vert.qsb")
         self.frag_shader = load_shader("shaded.frag.qsb")
+
+        self.distance = 0
+        self.need_upload = None     # None means no data
+        self.wireframe_toggle = False
+        self.resetView()
 
     def releaseResources(self):
         logging.debug("releaseResources")
@@ -49,14 +48,21 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.m_vbuf.destroy()
         self.m_vbuf = None
 
+    def resetView(self):
+        self.xaxis_rotate = 0.0
+        self.yaxis_rotate = 0.0
+        self.zaxis_zoom = 0.0
+        self.update()
+
     def keyReleaseEvent(self, ev):
-        if ev.key() == QtCore.Qt.Key.Key_Home:
-            self.xaxis_rotate = 0.0
-            self.yaxis_rotate = 0.0
-            self.zaxis_zoom = 0.0
-            self.update()
-        else:
-            super().keyReleaseEvent(ev)
+        match ev.key():
+            case QtCore.Qt.Key.Key_Home:
+                self.resetView()
+            case QtCore.Qt.Key.Key_W:
+                self.wireframe_toggle = True
+                self.update()
+            case _:
+                super().keyReleaseEvent(ev)
 
     def mousePressEvent(self, ev):
         self.mousePos = ev.position()
@@ -180,6 +186,14 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
             self.need_upload = False
 
         resourceUpdates.updateDynamicBuffer(self.m_ubuf, 0, ubuf_data.nbytes, ubuf_data)
+
+        if self.wireframe_toggle:
+            self.wireframe_toggle = False
+            PM = self.m_pipeline.PolygonMode
+            old_mode = self.m_pipeline.polygonMode()
+            new_mode = PM.Line if old_mode == PM.Fill else PM.Fill
+            self.m_pipeline.setPolygonMode(new_mode)
+            self.m_pipeline.create()
 
         clearColor = QtGui.QColor.fromRgbF(0.0, 0.0, 0.0, 1.0)
         ds = QtGui.QRhiDepthStencilClearValue(1.0, 0)
