@@ -68,9 +68,9 @@ class ImageRescaleRhiWidget(QtWidgets.QRhiWidget):
         self.m_ubuf = None
 
     def resetZoom(self):
-        self.scale = 1.0
         self.pan_dx = 0
         self.pan_dy = 0
+        self.zoom_dz = 0
         self.update()
 
     def keyReleaseEvent(self, ev):
@@ -94,7 +94,7 @@ class ImageRescaleRhiWidget(QtWidgets.QRhiWidget):
 
     def wheelEvent(self, ev):
         delta = ev.angleDelta().x() or ev.angleDelta().y()
-        self.scale /= 0.999**delta
+        self.zoom_dz += delta
         self.update()
 
     def setData(self, image):
@@ -200,8 +200,9 @@ class ImageRescaleRhiWidget(QtWidgets.QRhiWidget):
             self.lut_uploaded = True
 
         view = self.m_rhi.clipSpaceCorrMatrix()
-        view.scale(self.scale, -self.scale)   # y-flip
+        view.scale(1, -1)   # y-flip
         view.translate(self.pan_dx * 2 / self.width(), self.pan_dy * 2 / self.height())
+        view.scale(0.999 ** -self.zoom_dz)
         self.ubuf_data[0:4, 0:4] = np.array(view.data()).reshape((4, 4))
         self.ubuf_data[4, 0:2] = np.array(self.levels)
         resourceUpdates.updateDynamicBuffer(self.m_ubuf, 0, self.ubuf_data.nbytes, self.ubuf_data)
