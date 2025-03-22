@@ -25,6 +25,7 @@ class PointsRhiWidget(QtWidgets.QRhiWidget):
 
         self.distance = 0
         self.need_upload = None     # None means no data
+        self.pixel_mode = False
         self.resetView()
 
     def releaseResources(self):
@@ -53,6 +54,9 @@ class PointsRhiWidget(QtWidgets.QRhiWidget):
         match ev.key():
             case QtCore.Qt.Key.Key_Home:
                 self.resetView()
+            case QtCore.Qt.Key.Key_P:
+                self.pixel_mode = not self.pixel_mode
+                self.update()
             case _:
                 super().keyReleaseEvent(ev)
 
@@ -163,7 +167,7 @@ class PointsRhiWidget(QtWidgets.QRhiWidget):
         ubuf_data = np.zeros_like(self.ubuf_data)
         ubuf_data[0:4, 0:4] = np.array(mat_mvp.data()).reshape((4, 4))
         ubuf_data[4:7, 0:3] = np.array(mat_normal.data()).reshape((3, 3))
-        ubuf_data[7, 0] = 100.0      # size scale
+        ubuf_data[7, 0] = 0.0 if self.pixel_mode else distance * 5.0
 
         resourceUpdates = self.m_rhi.nextResourceUpdateBatch()
 

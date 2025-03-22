@@ -14,7 +14,7 @@ layout(std140, binding = 0) uniform buf {
 void main()
 {
     gl_Position = u_mvp * a_pos;
-    gl_PointSize = u_scale / gl_Position.w;
+    gl_PointSize = u_scale == 0.0 ? 1.0 : u_scale / gl_Position.w;
 
     vec3 normal = normalize(u_normal * a_normal);
     vec3 rgb = (normal + 1.0) * 0.5;
