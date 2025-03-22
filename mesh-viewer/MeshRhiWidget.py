@@ -49,8 +49,7 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.m_vbuf = None
 
     def resetView(self):
-        self.xaxis_rotate = 0.0
-        self.yaxis_rotate = 0.0
+        self.rotation = QtGui.QQuaternion()
         self.zaxis_zoom = 0.0
         self.update()
 
@@ -73,8 +72,8 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.mousePos = lpos
         
         if ev.buttons() == QtCore.Qt.MouseButton.LeftButton:
-            self.xaxis_rotate += diff.y()
-            self.yaxis_rotate += diff.x()
+            delta = QtGui.QQuaternion.fromEulerAngles(diff.y(), diff.x(), 0)
+            self.rotation = delta * self.rotation
             self.update()
 
     def wheelEvent(self, ev):
@@ -154,7 +153,7 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
 
         mat_view = QtGui.QMatrix4x4()
         mat_view.translate(0, 0, -distance)
-        mat_view.rotate(QtGui.QQuaternion.fromEulerAngles(self.xaxis_rotate, self.yaxis_rotate, 0))
+        mat_view.rotate(self.rotation)
 
         mat_normal = mat_view.normalMatrix()
 

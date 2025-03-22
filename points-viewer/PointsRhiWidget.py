@@ -20,14 +20,12 @@ class PointsRhiWidget(QtWidgets.QRhiWidget):
         self.m_srb = None
         self.m_pipeline = None
 
-        self.xaxis_rotate = 0.0
-        self.yaxis_rotate = 0.0
-        self.zaxis_zoom = 0.0
-        self.distance = 0
-        self.need_upload = None     # None means no data
-
         self.vert_shader = load_shader("points.vert.qsb")
         self.frag_shader = load_shader("points.frag.qsb")
+
+        self.distance = 0
+        self.need_upload = None     # None means no data
+        self.resetView()
 
     def releaseResources(self):
         logging.debug("releaseResources")
@@ -46,14 +44,17 @@ class PointsRhiWidget(QtWidgets.QRhiWidget):
         self.m_vbuf.destroy()
         self.m_vbuf = None
 
+    def resetView(self):
+        self.rotation = QtGui.QQuaternion()
+        self.zaxis_zoom = 0.0
+        self.update()
+
     def keyReleaseEvent(self, ev):
-        if ev.key() == QtCore.Qt.Key.Key_Home:
-            self.xaxis_rotate = 0.0
-            self.yaxis_rotate = 0.0
-            self.zaxis_zoom = 0.0
-            self.update()
-        else:
-            super().keyReleaseEvent(ev)
+        match ev.key():
+            case QtCore.Qt.Key.Key_Home:
+                self.resetView()
+            case _:
+                super().keyReleaseEvent(ev)
 
     def mousePressEvent(self, ev):
         self.mousePos = ev.position()
@@ -64,8 +65,8 @@ class PointsRhiWidget(QtWidgets.QRhiWidget):
         self.mousePos = lpos
         
         if ev.buttons() == QtCore.Qt.MouseButton.LeftButton:
-            self.xaxis_rotate += diff.y()
-            self.yaxis_rotate += diff.x()
+            delta = QtGui.QQuaternion.fromEulerAngles(diff.y(), diff.x(), 0)
+            self.rotation = delta * self.rotation
             self.update()
 
     def wheelEvent(self, ev):
@@ -147,7 +148,7 @@ class PointsRhiWidget(QtWidgets.QRhiWidget):
 
         mat_view = QtGui.QMatrix4x4()
         mat_view.translate(0, 0, -distance)
-        mat_view.rotate(QtGui.QQuaternion.fromEulerAngles(self.xaxis_rotate, self.yaxis_rotate, 0))
+        mat_view.rotate(self.rotation)
 
         mat_normal = mat_view.normalMatrix()
 
