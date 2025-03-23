@@ -30,6 +30,7 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.vert_shader = load_shader("shaded.vert.qsb")
         self.frag_shader = load_shader("shaded.frag.qsb")
 
+        self.model_center = [0, 0, 0]
         self.distance = 0
         self.need_upload = None     # None means no data
         self.wireframe_toggle = False
@@ -92,7 +93,7 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.update()
 
     def setData(self, mesh):
-        mesh.apply_translation(-mesh.bounds.mean(axis=0))
+        self.model_center = mesh.bounds.mean(axis=0).tolist()
         self.distance = (mesh.extents**2).sum()**0.5
 
         self.vertex_data = np.ascontiguousarray(
@@ -161,6 +162,9 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
 
         distance = self.distance * 0.999**self.zaxis_zoom
 
+        mat_model = QtGui.QMatrix4x4()
+        mat_model.translate(*[-x for x in self.model_center])
+
         mat_view = QtGui.QMatrix4x4()
         mat_view.translate(0, 0, -distance)
         mat_view.rotate(self.rotation)
@@ -173,6 +177,7 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         mat_mvp.perspective(45.0, r, 0.01 * distance, 1000.0 * distance)
 
         mat_mvp *= mat_view
+        mat_mvp *= mat_model
 
         # pack to uniform buffer alignment requirements
         ubuf_data = np.zeros_like(self.ubuf_data)
