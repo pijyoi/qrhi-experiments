@@ -8,8 +8,15 @@ def load_shader(filename):
 
 class ImageRescaleRhiWidget(QtWidgets.QRhiWidget):
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, *, api=None, debug=False):
         super().__init__(parent)
+
+        if isinstance(api, QtWidgets.QRhiWidget.Api):
+            self.setApi(api)
+
+        if debug:
+            self.setDebugLayerEnabled(debug)
+
         self.m_rhi = None
 
         self.m_ubuf = None

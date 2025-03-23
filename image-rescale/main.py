@@ -49,7 +49,7 @@ def parse_api(api : str | None) -> QtWidgets.QRhiWidget.Api | None:
         case 'vulkan':
             out = QtWidgets.QRhiWidget.Api.Vulkan
         case _:
-            out = None
+            raise ValueError(f"unrecognized api: {api}")
     return out
 
 def main():
