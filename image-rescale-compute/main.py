@@ -62,6 +62,7 @@ def main():
     parser.add_argument('--size', type=int, default=1024)
     parser.add_argument('--api', choices=['opengl', 'vulkan'])
     parser.add_argument('--debug', action='store_true')
+    parser.add_argument('--opengles', action='store_true')
     ARGS = parser.parse_args()
 
     if ARGS.filename is not None:
@@ -73,6 +74,11 @@ def main():
     else:
         rng = np.random.default_rng()
         img = rng.rayleigh(size=(ARGS.size, ARGS.size)).astype(np.float32)
+
+    if ARGS.opengles:
+        fmt = QtGui.QSurfaceFormat()
+        fmt.setRenderableType(fmt.RenderableType.OpenGLES)
+        QtGui.QSurfaceFormat.setDefaultFormat(fmt)
 
     app = pg.mkQApp()
     win = Widget(img, api=parse_api(ARGS.api), debug=ARGS.debug)
