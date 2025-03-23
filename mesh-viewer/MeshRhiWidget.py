@@ -33,6 +33,7 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.distance = 0
         self.need_upload = None     # None means no data
         self.wireframe_toggle = False
+        self.cullface_toggle = False
         self.resetView()
 
     def releaseResources(self):
@@ -63,6 +64,9 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         match ev.key():
             case QtCore.Qt.Key.Key_Home:
                 self.resetView()
+            case QtCore.Qt.Key.Key_C:
+                self.cullface_toggle = True
+                self.update()
             case QtCore.Qt.Key.Key_W:
                 self.wireframe_toggle = True
                 self.update()
@@ -192,12 +196,25 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
 
         resourceUpdates.updateDynamicBuffer(self.m_ubuf, 0, ubuf_data.nbytes, ubuf_data)
 
+        pipeline_dirty = False
+
+        if self.cullface_toggle:
+            self.cullface_toggle = False
+            CM = self.m_pipeline.CullMode
+            old_mode = self.m_pipeline.cullMode()
+            new_mode = CM.Back if old_mode == CM.None_ else CM.None_
+            self.m_pipeline.setCullMode(new_mode)
+            pipeline_dirty = True
+
         if self.wireframe_toggle:
             self.wireframe_toggle = False
             PM = self.m_pipeline.PolygonMode
             old_mode = self.m_pipeline.polygonMode()
             new_mode = PM.Line if old_mode == PM.Fill else PM.Fill
             self.m_pipeline.setPolygonMode(new_mode)
+            pipeline_dirty = True
+
+        if pipeline_dirty:
             self.m_pipeline.create()
 
         clearColor = QtGui.QColor.fromRgbF(0.0, 0.0, 0.0, 1.0)
