@@ -5,8 +5,10 @@ from PySide6 import QtWidgets
 
 from MeshRhiWidget import MeshRhiWidget
 
-def parse_api(api : str) -> QtWidgets.QRhiWidget.Api:
+def parse_api(api : str | None) -> QtWidgets.QRhiWidget.Api | None:
     match api:
+        case None:
+            out = None
         case 'opengl':
             out = QtWidgets.QRhiWidget.Api.OpenGL
         case 'vulkan':
@@ -16,13 +18,11 @@ def parse_api(api : str) -> QtWidgets.QRhiWidget.Api:
     return out
 
 class Widget(QtWidgets.QWidget):
-    def __init__(self, api = None):
+    def __init__(self, *, api=None, debug=False):
         super().__init__()
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        self._rhi_widget = MeshRhiWidget(self)
-        if api is not None:
-            self._rhi_widget.setApi(parse_api(api))
+        self._rhi_widget = MeshRhiWidget(self, api=api, debug=debug)
         layout.addWidget(self._rhi_widget)
 
     def closeEvent(self, e):
@@ -35,11 +35,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('filename', nargs='?')
     parser.add_argument('--api', choices=['opengl', 'vulkan'])
+    parser.add_argument('--debug', action='store_true')
     ARGS = parser.parse_args()
 
     mesh = trimesh.load_mesh(ARGS.filename)
     app = QtWidgets.QApplication([])
-    win = Widget(ARGS.api)
+    win = Widget(api=parse_api(ARGS.api), debug=ARGS.debug)
     win.resize(640, 480)
     win._rhi_widget.setData(mesh)
     win.show()

@@ -7,16 +7,13 @@ import pyqtgraph as pg
 from ImageRescaleRhiWidget import ImageRescaleRhiWidget
 
 class Widget(QtWidgets.QWidget):
-    def __init__(self, image,
-                 api : QtWidgets.QRhiWidget.Api | None = None):
+    def __init__(self, image, *, api=None, debug=False):
         super().__init__()
         self._rhi_widget = None
         self.layout = QtWidgets.QHBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
 
-        view = ImageRescaleRhiWidget()
-        if api is not None:
-            view.setApi(api)
+        view = ImageRescaleRhiWidget(api=api, debug=debug)
         self.layout.addWidget(view, 1)
         self._rhi_widget = view
 
@@ -43,8 +40,10 @@ class Widget(QtWidgets.QWidget):
     def onLevelsChanged(self, hist):
         self._rhi_widget.setLevels(hist.getLevels())
 
-def parse_api(api : str) -> QtWidgets.QRhiWidget.Api | None:
+def parse_api(api : str | None) -> QtWidgets.QRhiWidget.Api | None:
     match api:
+        case None:
+            out = None
         case 'opengl':
             out = QtWidgets.QRhiWidget.Api.OpenGL
         case 'vulkan':
@@ -58,6 +57,7 @@ def main():
     parser.add_argument('filename', nargs='?')
     parser.add_argument('--size', type=int, default=1024)
     parser.add_argument('--api', choices=['opengl', 'vulkan'])
+    parser.add_argument('--debug', action='store_true')
     ARGS = parser.parse_args()
 
     if ARGS.filename is not None:
@@ -71,7 +71,7 @@ def main():
         img = rng.rayleigh(size=(ARGS.size, ARGS.size)).astype(np.float32)
 
     app = pg.mkQApp()
-    win = Widget(img, parse_api(ARGS.api))
+    win = Widget(img, api=parse_api(ARGS.api), debug=ARGS.debug)
     win.resize(800, 600)
     win.show()
     app.exec()
