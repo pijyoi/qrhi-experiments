@@ -158,7 +158,7 @@ class ImageRescaleRhiWidget(QtWidgets.QRhiWidget):
         SRB = QtGui.QRhiShaderResourceBinding
         self.m_blitter_srb.setBindings([
             SRB.uniformBuffer(0, SRB.VertexStage, self.m_ubuf),
-            SRB.sampledTexture(0, SRB.FragmentStage, self.m_texture, self.m_sampler)
+            SRB.sampledTexture(1, SRB.FragmentStage, self.m_texture, self.m_sampler)
         ])
         self.m_blitter_srb.create()
 

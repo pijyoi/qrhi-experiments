@@ -2,7 +2,7 @@
 
 objects = texture.vert.qsb texture.frag.qsb rescale.comp.qsb
 
-shading_langs = --glsl "310 es, 430" --hlsl 50 --msl 12
+shading_langs = --glsl 310es,430 --hlsl 50 --msl 12
 
 all: $(objects)
 

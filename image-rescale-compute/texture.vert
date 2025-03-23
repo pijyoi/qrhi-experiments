@@ -2,7 +2,7 @@
 
 layout(location = 0) out vec2 v_texcoord;
 
-layout(std140, binding = 0) uniform buf {
+layout(binding = 0, std140) uniform buf {
     vec2 u_minmax;
     float u_yscale;
 };
