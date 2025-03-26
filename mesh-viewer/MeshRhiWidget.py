@@ -109,18 +109,25 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         dtype = np.uint16 if len(self.vertex_data) <= 65535 else np.uint32
         self.faces_data = np.ascontiguousarray(mesh.faces, dtype=dtype)
 
-        if hasattr(mesh.visual, 'uv'):
-            self.vertex_data[:, 6:8] = mesh.visual.uv
-            material = mesh.visual.material
+        # create a single-pixeled texture to use as constant color
+        self.image_data = QtGui.QImage(1, 1, QtGui.QImage.Format.Format_RGBA8888)
+        self.image_data.fill(QtCore.Qt.GlobalColor.white)
+
+        visual = mesh.visual
+
+        if visual.kind == 'vertex':
+            visual = visual.to_texture()
+
+        if visual.kind == 'texture':
+            self.vertex_data[:, 6:8] = visual.uv
+            material = visual.material
             if not hasattr(material, 'image'):
                 material = material.to_simple()
-            self.image_data = material.image.toqimage().mirrored()
-            self.image_data.convertTo(QtGui.QImage.Format.Format_RGBA8888)
-        else:
-            # create a single-pixeled texture to use as constant color
-            self.vertex_data[:, 6:8] = 0
-            self.image_data = QtGui.QImage(1, 1, QtGui.QImage.Format.Format_RGBA8888)
-            self.image_data.fill(QtCore.Qt.GlobalColor.white)
+            if material.image is not None:
+                self.image_data = material.image.toqimage().mirrored()
+                self.image_data.convertTo(QtGui.QImage.Format.Format_RGBA8888)
+            else:
+                self.image_data.fill(QtGui.QColor(*material.main_color.tolist()))
 
         self.need_upload = True
         self.update()
