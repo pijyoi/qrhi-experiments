@@ -24,6 +24,8 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.m_vbuf = None
         self.m_ibuf = None
         self.m_ubuf = None
+        self.m_texture = None
+        self.m_sampler = None
         self.m_srb = None
         self.m_pipeline = None
 
@@ -49,6 +51,10 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.m_pipeline = None
         self.m_srb.destroy()
         self.m_srb = None
+        self.m_sampler.destroy()
+        self.m_sampler = None
+        self.m_texture.destroy()
+        self.m_texture = None
         self.m_ubuf.destroy()
         self.m_ubuf = None
         self.m_ibuf.destroy()
@@ -96,11 +102,25 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.model_center = mesh.bounds.mean(axis=0).tolist()
         self.distance = (mesh.extents**2).sum()**0.5
 
-        self.vertex_data = np.ascontiguousarray(
-            np.hstack([mesh.vertices, mesh.vertex_normals]).astype(np.float32)
-        )
+        self.vertex_data = np.zeros((len(mesh.vertices), 8), dtype=np.float32)
+        self.vertex_data[:, 0:3] = mesh.vertices
+        self.vertex_data[:, 3:6] = mesh.vertex_normals
+
         dtype = np.uint16 if len(self.vertex_data) <= 65535 else np.uint32
         self.faces_data = np.ascontiguousarray(mesh.faces, dtype=dtype)
+
+        if hasattr(mesh.visual, 'uv'):
+            self.vertex_data[:, 6:8] = mesh.visual.uv
+            material = mesh.visual.material
+            if not hasattr(material, 'image'):
+                material = material.to_simple()
+            self.image_data = material.image.toqimage().mirrored()
+        else:
+            # create a single-pixeled texture to use as constant color
+            self.vertex_data[:, 6:8] = 0
+            self.image_data = QtGui.QImage(1, 1, QtGui.QImage.Format.Format_RGBA8888)
+            self.image_data.fill(QtCore.Qt.GlobalColor.white)
+
         self.need_upload = True
         self.update()
 
@@ -125,10 +145,18 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.m_ubuf = self.m_rhi.newBuffer(QtGui.QRhiBuffer.Dynamic, QtGui.QRhiBuffer.UniformBuffer, self.ubuf_data.nbytes)
         self.m_ubuf.create()
 
+        self.m_texture = self.m_rhi.newTexture(QtGui.QRhiTexture.Format.RGBA8, QtCore.QSize(1, 1))
+        self.m_texture.create()
+        FI = QtGui.QRhiSampler.Filter
+        AM = QtGui.QRhiSampler.AddressMode
+        self.m_sampler = self.m_rhi.newSampler(FI.Nearest, FI.Nearest, FI.None_, AM.ClampToEdge, AM.ClampToEdge)
+        self.m_sampler.create()
+
         self.m_srb = self.m_rhi.newShaderResourceBindings()
         SRB = QtGui.QRhiShaderResourceBinding
         self.m_srb.setBindings([
             SRB.uniformBuffer(0, SRB.VertexStage | SRB.FragmentStage, self.m_ubuf),
+            SRB.sampledTexture(1, SRB.FragmentStage, self.m_texture, self.m_sampler),
         ])
         self.m_srb.create()
 
@@ -145,11 +173,12 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         ])
         inputLayout = QtGui.QRhiVertexInputLayout()
         inputLayout.setBindings([
-            QtGui.QRhiVertexInputBinding(6 * 4)
+            QtGui.QRhiVertexInputBinding(8 * 4)
         ])
         inputLayout.setAttributes([
             QtGui.QRhiVertexInputAttribute(0, 0, QtGui.QRhiVertexInputAttribute.Float3, 0),
-            QtGui.QRhiVertexInputAttribute(0, 1, QtGui.QRhiVertexInputAttribute.Float3, 3 * 4)
+            QtGui.QRhiVertexInputAttribute(0, 1, QtGui.QRhiVertexInputAttribute.Float3, 3 * 4),
+            QtGui.QRhiVertexInputAttribute(0, 2, QtGui.QRhiVertexInputAttribute.Float2, 6 * 4),
         ])
         self.m_pipeline.setVertexInputLayout(inputLayout)
         self.m_pipeline.setShaderResourceBindings(self.m_srb)
@@ -196,6 +225,11 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
                 self.m_ibuf.create()
             resourceUpdates.uploadStaticBuffer(self.m_vbuf, self.vertex_data)
             resourceUpdates.uploadStaticBuffer(self.m_ibuf, self.faces_data)
+
+            if self.m_texture.pixelSize() != self.image_data.size():
+                self.m_texture.setPixelSize(self.image_data.size())
+                self.m_texture.create()
+            resourceUpdates.uploadTexture(self.m_texture, self.image_data)
 
             self.need_upload = False
 

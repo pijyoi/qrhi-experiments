@@ -2,7 +2,7 @@
 
 objects = shaded.vert.qsb shaded.frag.qsb
 
-shading_langs = --glsl "300 es, 140" --hlsl 50 --msl 12
+shading_langs = --glsl 300es,140 --hlsl 50 --msl 12
 
 all: $(objects)
 
