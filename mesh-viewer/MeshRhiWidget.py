@@ -115,6 +115,7 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
             if not hasattr(material, 'image'):
                 material = material.to_simple()
             self.image_data = material.image.toqimage().mirrored()
+            self.image_data.convertTo(QtGui.QImage.Format.Format_RGBA8888)
         else:
             # create a single-pixeled texture to use as constant color
             self.vertex_data[:, 6:8] = 0
