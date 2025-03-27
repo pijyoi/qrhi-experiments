@@ -103,7 +103,7 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.update()
 
     def setData(self, mesh):
-        self.model_center = mesh.bounds.mean(axis=0).tolist()
+        self.model_center = mesh.center_mass.tolist()
         self.distance = (mesh.extents**2).sum()**0.5
 
         self.vertex_data = np.zeros((len(mesh.vertices), 8), dtype=np.float32)
