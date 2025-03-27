@@ -35,6 +35,7 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.model_center = [0, 0, 0]
         self.distance = 0
         self.need_upload = None     # None means no data
+        self.background_white = False
         self.wireframe_toggle = False
         self.cullface_toggle = False
         self.resetView()
@@ -71,6 +72,9 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         match ev.key():
             case QtCore.Qt.Key.Key_Home:
                 self.resetView()
+            case QtCore.Qt.Key.Key_B:
+                self.background_white = not self.background_white
+                self.update()
             case QtCore.Qt.Key.Key_C:
                 self.cullface_toggle = True
                 self.update()
@@ -264,7 +268,8 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         if pipeline_dirty:
             self.m_pipeline.create()
 
-        clearColor = QtGui.QColor.fromRgbF(0.0, 0.0, 0.0, 1.0)
+        v = 1.0 if self.background_white else 0.0
+        clearColor = QtGui.QColor.fromRgbF(v, v, v)
         ds = QtGui.QRhiDepthStencilClearValue(1.0, 0)
         cb.beginPass(self.renderTarget(), clearColor, ds, resourceUpdates)
 
