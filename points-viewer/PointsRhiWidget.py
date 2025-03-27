@@ -186,7 +186,7 @@ class PointsRhiWidget(QtWidgets.QRhiWidget):
             if self.m_vbuf.size() < self.vertex_data.nbytes:
                 self.m_vbuf.setSize(self.vertex_data.nbytes)
                 self.m_vbuf.create()
-            resourceUpdates.uploadStaticBuffer(self.m_vbuf, self.vertex_data)
+            resourceUpdates.uploadStaticBuffer(self.m_vbuf, 0, self.vertex_data.nbytes, self.vertex_data)
 
             self.need_upload = False
 
