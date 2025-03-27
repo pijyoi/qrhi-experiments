@@ -38,10 +38,11 @@ if __name__ == '__main__':
     parser.add_argument('--debug', action='store_true')
     ARGS = parser.parse_args()
 
-    mesh = trimesh.load_mesh(ARGS.filename)
     app = QtWidgets.QApplication([])
     win = Widget(api=parse_api(ARGS.api), debug=ARGS.debug)
+    if ARGS.filename is not None:
+        mesh = trimesh.load_mesh(ARGS.filename)
+        win._rhi_widget.setData(mesh)
     win.resize(640, 480)
-    win._rhi_widget.setData(mesh)
     win.show()
     app.exec()

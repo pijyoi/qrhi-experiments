@@ -1,6 +1,7 @@
 import logging
 import pathlib
 import numpy as np
+import trimesh
 from PySide6 import QtCore, QtGui, QtWidgets
 
 def load_shader(filename):
@@ -19,6 +20,7 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
             self.setDebugLayerEnabled(debug)
 
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self.setAcceptDrops(True)
 
         self.m_rhi = None
         self.m_vbuf = None
@@ -101,6 +103,23 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         delta = ev.angleDelta().x() or ev.angleDelta().y()
         self.zaxis_zoom += delta
         self.update()
+
+    def dragEnterEvent(self, ev):
+        if ev.mimeData().hasUrls:
+            ev.accept()
+
+    def dropEvent(self, ev):
+        if not ev.mimeData().hasUrls:
+            return
+
+        ev.setDropAction(QtCore.Qt.CopyAction)
+        ev.accept()
+
+        links = []
+        for url in ev.mimeData().urls():
+            links.append(url.toLocalFile())
+        mesh = trimesh.load_mesh(links[0])
+        self.setData(mesh)
 
     def setData(self, mesh):
         self.model_center = mesh.center_mass.tolist()
@@ -235,8 +254,8 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
             if self.m_ibuf.size() < self.faces_data.nbytes:
                 self.m_ibuf.setSize(self.faces_data.nbytes)
                 self.m_ibuf.create()
-            resourceUpdates.uploadStaticBuffer(self.m_vbuf, self.vertex_data)
-            resourceUpdates.uploadStaticBuffer(self.m_ibuf, self.faces_data)
+            resourceUpdates.uploadStaticBuffer(self.m_vbuf, 0, self.vertex_data.nbytes, self.vertex_data)
+            resourceUpdates.uploadStaticBuffer(self.m_ibuf, 0, self.faces_data.nbytes, self.faces_data)
 
             if self.m_texture.pixelSize() != self.image_data.size():
                 self.m_texture.setPixelSize(self.image_data.size())
