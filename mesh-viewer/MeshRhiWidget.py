@@ -124,11 +124,11 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.update()
 
     def dragEnterEvent(self, ev):
-        if ev.mimeData().hasUrls:
+        if ev.mimeData().hasUrls():
             ev.accept()
 
     def dropEvent(self, ev):
-        if not ev.mimeData().hasUrls:
+        if not ev.mimeData().hasUrls():
             return
 
         ev.setDropAction(QtCore.Qt.CopyAction)
