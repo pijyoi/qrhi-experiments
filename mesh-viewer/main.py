@@ -1,6 +1,5 @@
 import argparse
 
-import trimesh
 from PySide6 import QtWidgets
 
 from MeshRhiWidget import MeshRhiWidget
@@ -41,8 +40,7 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication([])
     win = Widget(api=parse_api(ARGS.api), debug=ARGS.debug)
     if ARGS.filename is not None:
-        mesh = trimesh.load_mesh(ARGS.filename)
-        win._rhi_widget.setData(mesh)
+        win._rhi_widget.loadMesh(ARGS.filename)
     win.resize(640, 480)
     win.show()
     app.exec()

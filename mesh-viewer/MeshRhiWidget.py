@@ -8,6 +8,25 @@ def load_shader(filename):
     pathname = pathlib.Path(__file__).parent / filename
     return QtGui.QShader.fromSerialized(pathname.read_bytes())
 
+class MeshLoader(QtCore.QObject):
+    sigLoaded = QtCore.Signal(object)
+
+    def __init__(self, pathname):
+        super().__init__()
+        self.pathname = pathname
+
+    def __call__(self):
+        mesh = trimesh.load_mesh(self.pathname)
+
+        if len(mesh.vertices) == 0:
+            return
+
+        # access vertex_normals property to trigger its
+        # potentially expensive computation
+        mesh.vertex_normals
+
+        self.sigLoaded.emit(mesh)
+
 class MeshRhiWidget(QtWidgets.QRhiWidget):
 
     def __init__(self, parent=None, *, api=None, debug=False):
@@ -115,12 +134,15 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         ev.setDropAction(QtCore.Qt.CopyAction)
         ev.accept()
 
-        links = []
-        for url in ev.mimeData().urls():
-            links.append(url.toLocalFile())
-        mesh = trimesh.load_mesh(links[0])
-        self.setData(mesh)
+        links = [url.toLocalFile() for url in ev.mimeData().urls()]
+        self.loadMesh(links[0])
 
+    def loadMesh(self, pathname):
+        runner = MeshLoader(pathname)
+        runner.sigLoaded.connect(self.setData)
+        QtCore.QThreadPool.globalInstance().start(runner)
+
+    @QtCore.Slot(object)
     def setData(self, mesh):
         self.model_center = mesh.center_mass.tolist()
         self.distance = (mesh.extents**2).sum()**0.5
