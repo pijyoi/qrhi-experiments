@@ -87,12 +87,12 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
     def resetView(self):
         self.rotation = QtGui.QQuaternion()
         self.zaxis_zoom = 0.0
-        self.update()
 
     def keyReleaseEvent(self, ev):
         match ev.key():
             case QtCore.Qt.Key.Key_Home:
                 self.resetView()
+                self.update()
             case QtCore.Qt.Key.Key_B:
                 self.background_white = not self.background_white
                 self.update()
