@@ -87,6 +87,8 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
     def resetView(self):
         self.rotation = QtGui.QQuaternion()
         self.zaxis_zoom = 0.0
+        self.xaxis_pan = 0.0
+        self.yaxis_pan = 0.0
 
     def keyReleaseEvent(self, ev):
         match ev.key():
@@ -114,8 +116,12 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.mousePos = lpos
         
         if ev.buttons() == QtCore.Qt.MouseButton.LeftButton:
-            delta = QtGui.QQuaternion.fromEulerAngles(diff.y(), diff.x(), 0)
-            self.rotation = delta * self.rotation
+            if ev.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier:
+                self.xaxis_pan += diff.x()
+                self.yaxis_pan -= diff.y()
+            else:
+                delta = QtGui.QQuaternion.fromEulerAngles(diff.y(), diff.x(), 0)
+                self.rotation = delta * self.rotation
             self.update()
 
     def wheelEvent(self, ev):
@@ -247,8 +253,11 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         mat_model = QtGui.QMatrix4x4()
         mat_model.translate(*[-x for x in self.model_center])
 
+        xpan = self.xaxis_pan * 2 / self.width() * distance
+        ypan = self.yaxis_pan * 2 / self.height() * distance
+
         mat_view = QtGui.QMatrix4x4()
-        mat_view.translate(0, 0, -distance)
+        mat_view.translate(xpan, ypan, -distance)
         mat_view.rotate(self.rotation)
 
         mat_normal = mat_view.normalMatrix()
