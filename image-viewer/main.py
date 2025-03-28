@@ -1,6 +1,6 @@
 import argparse
 
-from PySide6 import QtGui, QtWidgets
+from PySide6 import QtWidgets
 
 from ImageRhiWidget import ImageRhiWidget
 
@@ -37,11 +37,10 @@ if __name__ == '__main__':
     parser.add_argument('--debug', action='store_true')
     ARGS = parser.parse_args()
 
-    qimage = QtGui.QImage(ARGS.filename)
-    qimage.convertTo(QtGui.QImage.Format.Format_RGBA8888)
     app = QtWidgets.QApplication([])
     win = Widget(api=parse_api(ARGS.api), debug=ARGS.debug)
+    if ARGS.filename is not None:
+        win._rhi_widget.loadImage(ARGS.filename)
     win.resize(640, 480)
-    win._rhi_widget.setData(qimage)
     win.show()
     app.exec()

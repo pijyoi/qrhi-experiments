@@ -7,6 +7,18 @@ def load_shader(filename):
     pathname = pathlib.Path(__file__).parent / filename
     return QtGui.QShader.fromSerialized(pathname.read_bytes())
 
+class ImageLoader(QtCore.QObject):
+    sigLoaded = QtCore.Signal(object)
+
+    def __init__(self, pathname):
+        super().__init__()
+        self.pathname = pathname
+
+    def __call__(self):
+        qimage = QtGui.QImage(self.pathname)
+        qimage.convertTo(QtGui.QImage.Format.Format_RGBA8888)
+        self.sigLoaded.emit(qimage)
+
 class ImageRhiWidget(QtWidgets.QRhiWidget):
 
     def __init__(self, parent=None, *, api=None, debug=False):
@@ -19,6 +31,7 @@ class ImageRhiWidget(QtWidgets.QRhiWidget):
             self.setDebugLayerEnabled(debug)
 
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self.setAcceptDrops(True)
 
         self.m_rhi = None
         self.m_srb = None
@@ -83,6 +96,26 @@ class ImageRhiWidget(QtWidgets.QRhiWidget):
         self.zoom_dz += delta
         self.update()
 
+    def dragEnterEvent(self, ev):
+        if ev.mimeData().hasUrls():
+            ev.accept()
+
+    def dropEvent(self, ev):
+        if not ev.mimeData().hasUrls():
+            return
+
+        ev.setDropAction(QtCore.Qt.CopyAction)
+        ev.accept()
+
+        links = [url.toLocalFile() for url in ev.mimeData().urls()]
+        self.loadImage(links[0])
+
+    def loadImage(self, pathname):
+        runner = ImageLoader(pathname)
+        runner.sigLoaded.connect(self.setData)
+        QtCore.QThreadPool.globalInstance().start(runner)
+
+    @QtCore.Slot(object)
     def setData(self, qimage):
         if qimage is None:
             qimage = QtGui.QImage(1, 1, QtGui.QImage.Format.Format_RGBA8888)
