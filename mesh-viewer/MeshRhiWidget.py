@@ -131,14 +131,13 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
 
     def dragEnterEvent(self, ev):
         if ev.mimeData().hasUrls():
-            ev.accept()
+            ev.acceptProposedAction()
 
     def dropEvent(self, ev):
         if not ev.mimeData().hasUrls():
             return
 
-        ev.setDropAction(QtCore.Qt.CopyAction)
-        ev.accept()
+        ev.acceptProposedAction()
 
         links = [url.toLocalFile() for url in ev.mimeData().urls()]
         self.loadMesh(links[0])
