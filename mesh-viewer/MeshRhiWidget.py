@@ -16,16 +16,19 @@ class MeshLoader(QtCore.QObject):
         self.pathname = pathname
 
     def __call__(self):
-        mesh = trimesh.load_mesh(self.pathname)
+        try:
+            mesh = trimesh.load_mesh(self.pathname)
 
-        if len(mesh.vertices) == 0:
-            return
+            if len(mesh.vertices) == 0:
+                raise ValueError("mesh with no vertices")
 
-        # access vertex_normals property to trigger its
-        # potentially expensive computation
-        mesh.vertex_normals
-
-        self.sigLoaded.emit(mesh)
+            # access vertex_normals property to trigger its
+            # potentially expensive computation
+            mesh.vertex_normals
+        except Exception as e:
+            print(e)
+        else:
+            self.sigLoaded.emit(mesh)
 
 class MeshRhiWidget(QtWidgets.QRhiWidget):
 

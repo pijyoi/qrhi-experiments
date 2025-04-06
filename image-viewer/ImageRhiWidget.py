@@ -15,9 +15,13 @@ class ImageLoader(QtCore.QObject):
         self.pathname = pathname
 
     def __call__(self):
-        qimage = QtGui.QImage(self.pathname)
-        qimage.convertTo(QtGui.QImage.Format.Format_RGBA8888)
-        self.sigLoaded.emit(qimage)
+        try:
+            qimage = QtGui.QImage(self.pathname)
+            qimage.convertTo(QtGui.QImage.Format.Format_RGBA8888)
+        except Exception as e:
+            print(e)
+        else:
+            self.sigLoaded.emit(qimage)
 
 class ImageRhiWidget(QtWidgets.QRhiWidget):
 
