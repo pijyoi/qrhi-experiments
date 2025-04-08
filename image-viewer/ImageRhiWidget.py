@@ -74,13 +74,16 @@ class ImageRhiWidget(QtWidgets.QRhiWidget):
         self.pan_dx = 0
         self.pan_dy = 0
         self.zoom_dz = 0
-        self.update()
 
     def keyReleaseEvent(self, ev):
-        if ev.key() == QtCore.Qt.Key.Key_Home:
-            self.resetZoom()
-        else:
-            super().keyReleaseEvent(ev)
+        match ev.key():
+            case QtCore.Qt.Key.Key_Q:
+                QtWidgets.QApplication.instance().quit()
+            case QtCore.Qt.Key.Key_Z:
+                self.resetZoom()
+                self.update()
+            case _:
+                super().keyReleaseEvent(ev)
 
     def mousePressEvent(self, ev):
         self.mousePos = ev.position()

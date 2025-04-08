@@ -95,9 +95,6 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
 
     def keyReleaseEvent(self, ev):
         match ev.key():
-            case QtCore.Qt.Key.Key_Home:
-                self.resetView()
-                self.update()
             case QtCore.Qt.Key.Key_B:
                 self.background_white = not self.background_white
                 self.update()
@@ -106,6 +103,11 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
                 self.update()
             case QtCore.Qt.Key.Key_W:
                 self.wireframe_toggle = True
+                self.update()
+            case QtCore.Qt.Key.Key_Q:
+                QtWidgets.QApplication.instance().quit()
+            case QtCore.Qt.Key.Key_Z:
+                self.resetView()
                 self.update()
             case _:
                 super().keyReleaseEvent(ev)
