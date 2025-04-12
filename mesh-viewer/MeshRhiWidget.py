@@ -52,10 +52,11 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.m_ubuf = None
         self.m_texture = None
         self.m_sampler = None
-        self.m_srb = None
-        self.m_pipeline = None
+        self.m_srb_texture = None
+        self.m_pipeline_texture = None
+        self.m_srb_vertex = None
+        self.m_pipeline_vertex = None
 
-        self.pipeline_kind = 'texture'
         self.visual_kind = 'texture'
 
         self.vert_texture_shader = load_shader("shaded.vert.qsb")
@@ -74,25 +75,24 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
     def releaseResources(self):
         logging.debug("releaseResources")
 
-        if self.m_pipeline is None:
+        if self.m_pipeline_texture is None:
             return
 
         self.m_rhi = None
 
-        self.m_pipeline.destroy()
-        self.m_pipeline = None
-        self.m_srb.destroy()
-        self.m_srb = None
-        self.m_sampler.destroy()
-        self.m_sampler = None
-        self.m_texture.destroy()
-        self.m_texture = None
-        self.m_ubuf.destroy()
-        self.m_ubuf = None
-        self.m_ibuf.destroy()
-        self.m_ibuf = None
-        self.m_vbuf.destroy()
-        self.m_vbuf = None
+        names = [
+            'pipeline_vertex', 'srb_vertex',
+            'pipeline_texture', 'srb_texture',
+            'sampler', 'texture',
+            'ubuf', 'ibuf', 'vbuf'
+        ]
+
+        for name in names:
+            fullname = 'm_' + name
+            obj = getattr(self, fullname)
+            if obj is not None:
+                obj.destroy()
+                setattr(self, fullname, None)
 
     def resetView(self):
         self.rotation = QtGui.QQuaternion()
@@ -206,10 +206,10 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
 
     def initialize(self, cb):
         if self.m_rhi != self.rhi():
-            self.m_pipeline = None
+            self.m_pipeline_texture = None
             self.m_rhi = self.rhi()
 
-        if self.m_pipeline is not None:
+        if self.m_pipeline_texture is not None:
             return
         
         logging.debug("initialize")
@@ -232,11 +232,10 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.m_sampler = self.m_rhi.newSampler(FI.Nearest, FI.Nearest, FI.None_, AM.ClampToEdge, AM.ClampToEdge)
         self.m_sampler.create()
 
-        self.create_pipeline(self.visual_kind)
+        self.m_pipeline_texture, self.m_srb_texture = self.create_pipeline('texture')
+        self.m_pipeline_vertex, self.m_srb_vertex = self.create_pipeline('vertex')
 
     def create_pipeline(self, kind : str):
-        self.pipeline_kind = kind
-
         SS = QtGui.QRhiShaderStage
         SRB = QtGui.QRhiShaderResourceBinding
         VIA = QtGui.QRhiVertexInputAttribute
@@ -268,26 +267,27 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
                 VIA(0, 2, VIA.UNormByte4, 6 * 4),
             ]
 
-        self.m_srb = self.m_rhi.newShaderResourceBindings()
+        srb = self.m_rhi.newShaderResourceBindings()
         SRB = QtGui.QRhiShaderResourceBinding
-        self.m_srb.setBindings(bindings)
-        self.m_srb.create()
+        srb.setBindings(bindings)
+        srb.create()
 
-        self.m_pipeline = self.m_rhi.newGraphicsPipeline()
+        pipeline = self.m_rhi.newGraphicsPipeline()
         blend = QtGui.QRhiGraphicsPipeline.TargetBlend()
-        self.m_pipeline.setTargetBlends([blend])
-        self.m_pipeline.setTopology(QtGui.QRhiGraphicsPipeline.Topology.Triangles)
-        self.m_pipeline.setDepthTest(True)
-        self.m_pipeline.setDepthWrite(True)
-        # self.m_pipeline.setCullMode(QtGui.QRhiGraphicsPipeline.CullMode.Back)
-        self.m_pipeline.setShaderStages(shader_stages)
+        pipeline.setTargetBlends([blend])
+        pipeline.setTopology(QtGui.QRhiGraphicsPipeline.Topology.Triangles)
+        pipeline.setDepthTest(True)
+        pipeline.setDepthWrite(True)
+        pipeline.setShaderStages(shader_stages)
         inputLayout = QtGui.QRhiVertexInputLayout()
         inputLayout.setBindings([QtGui.QRhiVertexInputBinding(8 * 4)])
         inputLayout.setAttributes(input_attributes)
-        self.m_pipeline.setVertexInputLayout(inputLayout)
-        self.m_pipeline.setShaderResourceBindings(self.m_srb)
-        self.m_pipeline.setRenderPassDescriptor(self.renderTarget().renderPassDescriptor())
-        self.m_pipeline.create()
+        pipeline.setVertexInputLayout(inputLayout)
+        pipeline.setShaderResourceBindings(srb)
+        pipeline.setRenderPassDescriptor(self.renderTarget().renderPassDescriptor())
+        pipeline.create()
+
+        return pipeline, srb
 
     def render(self, cb):
         if self.need_upload is None:
@@ -342,38 +342,38 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
 
         resourceUpdates.updateDynamicBuffer(self.m_ubuf, 0, ubuf_data.nbytes, ubuf_data)
 
-        if self.pipeline_kind != self.visual_kind:
-            self.m_pipeline.destroy()
-            self.m_srb.destroy()
-            self.create_pipeline(self.visual_kind)
+        if self.visual_kind == 'texture':
+            pipeline = self.m_pipeline_texture
+        else:
+            pipeline = self.m_pipeline_vertex
 
         pipeline_dirty = False
 
         if self.cullface_toggle:
             self.cullface_toggle = False
-            CM = self.m_pipeline.CullMode
-            old_mode = self.m_pipeline.cullMode()
+            CM = pipeline.CullMode
+            old_mode = pipeline.cullMode()
             new_mode = CM.Back if old_mode == CM.None_ else CM.None_
-            self.m_pipeline.setCullMode(new_mode)
+            pipeline.setCullMode(new_mode)
             pipeline_dirty = True
 
         if self.wireframe_toggle:
             self.wireframe_toggle = False
-            PM = self.m_pipeline.PolygonMode
-            old_mode = self.m_pipeline.polygonMode()
+            PM = pipeline.PolygonMode
+            old_mode = pipeline.polygonMode()
             new_mode = PM.Line if old_mode == PM.Fill else PM.Fill
-            self.m_pipeline.setPolygonMode(new_mode)
+            pipeline.setPolygonMode(new_mode)
             pipeline_dirty = True
 
         if pipeline_dirty:
-            self.m_pipeline.create()
+            pipeline.create()
 
         v = 1.0 if self.background_white else 0.0
         clearColor = QtGui.QColor.fromRgbF(v, v, v)
         ds = QtGui.QRhiDepthStencilClearValue(1.0, 0)
         cb.beginPass(self.renderTarget(), clearColor, ds, resourceUpdates)
 
-        cb.setGraphicsPipeline(self.m_pipeline)
+        cb.setGraphicsPipeline(pipeline)
         cb.setViewport(QtGui.QRhiViewport(0, 0, outputSize.width(), outputSize.height()))
         cb.setShaderResources()
         IF = QtGui.QRhiCommandBuffer.IndexFormat
