@@ -22,6 +22,8 @@ class MeshLoader(QtCore.QObject):
             if len(mesh.vertices) == 0:
                 raise ValueError("mesh with no vertices")
 
+            print(f'{mesh.visual.kind=} {mesh.vertices.shape=}')
+
             # access vertex_normals property to trigger its
             # potentially expensive computation
             mesh.vertex_normals
@@ -53,8 +55,13 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.m_srb = None
         self.m_pipeline = None
 
-        self.vert_shader = load_shader("shaded.vert.qsb")
-        self.frag_shader = load_shader("shaded.frag.qsb")
+        self.pipeline_kind = 'texture'
+        self.visual_kind = 'texture'
+
+        self.vert_texture_shader = load_shader("shaded.vert.qsb")
+        self.frag_texture_shader = load_shader("shaded.frag.qsb")
+        self.vert_color_shader = load_shader("color.vert.qsb")
+        self.frag_color_shader = load_shader("color.frag.qsb")
 
         self.model_center = [0, 0, 0]
         self.distance = 0
@@ -170,8 +177,7 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
 
         visual = mesh.visual
 
-        if visual.kind == 'vertex':
-            visual = visual.to_texture()
+        self.visual_kind = visual.kind
 
         if visual.kind == 'texture':
             self.vertex_data[:, 6:8] = visual.uv
@@ -183,6 +189,17 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
                 self.image_data.convertTo(QtGui.QImage.Format.Format_RGBA8888)
             else:
                 self.image_data.fill(QtGui.QColor(*material.main_color.tolist()))
+
+        elif visual.kind == 'vertex':
+            # this kind is actually quite rare
+            byte_view = self.vertex_data.view(np.uint8).reshape((-1, 8, 4))
+            byte_view[:, 6, :] = visual.vertex_colors
+
+        else:
+            # fill with white
+            byte_view = self.vertex_data.view(np.uint8).reshape((-1, 8, 4))
+            byte_view[:, 6, :] = (255, 255, 255, 255)
+            self.visual_kind = 'vertex'
 
         self.need_upload = True
         self.update()
@@ -215,12 +232,45 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.m_sampler = self.m_rhi.newSampler(FI.Nearest, FI.Nearest, FI.None_, AM.ClampToEdge, AM.ClampToEdge)
         self.m_sampler.create()
 
+        self.create_pipeline(self.visual_kind)
+
+    def create_pipeline(self, kind : str):
+        self.pipeline_kind = kind
+
+        SS = QtGui.QRhiShaderStage
+        SRB = QtGui.QRhiShaderResourceBinding
+        VIA = QtGui.QRhiVertexInputAttribute
+        if kind == 'texture':
+            shader_stages = [
+                SS(SS.Vertex, self.vert_texture_shader),
+                SS(SS.Fragment, self.frag_texture_shader),
+            ]
+            bindings = [
+                SRB.uniformBuffer(0, SRB.VertexStage | SRB.FragmentStage, self.m_ubuf),
+                SRB.sampledTexture(1, SRB.FragmentStage, self.m_texture, self.m_sampler),
+            ]
+            input_attributes = [
+                VIA(0, 0, VIA.Float3, 0),
+                VIA(0, 1, VIA.Float3, 3 * 4),
+                VIA(0, 2, VIA.Float2, 6 * 4),
+            ]
+        else:
+            shader_stages = [
+                SS(SS.Vertex, self.vert_color_shader),
+                SS(SS.Fragment, self.frag_color_shader),
+            ]
+            bindings = [
+                SRB.uniformBuffer(0, SRB.VertexStage | SRB.FragmentStage, self.m_ubuf),
+            ]
+            input_attributes = [
+                VIA(0, 0, VIA.Float3, 0),
+                VIA(0, 1, VIA.Float3, 3 * 4),
+                VIA(0, 2, VIA.UNormByte4, 6 * 4),
+            ]
+
         self.m_srb = self.m_rhi.newShaderResourceBindings()
         SRB = QtGui.QRhiShaderResourceBinding
-        self.m_srb.setBindings([
-            SRB.uniformBuffer(0, SRB.VertexStage | SRB.FragmentStage, self.m_ubuf),
-            SRB.sampledTexture(1, SRB.FragmentStage, self.m_texture, self.m_sampler),
-        ])
+        self.m_srb.setBindings(bindings)
         self.m_srb.create()
 
         self.m_pipeline = self.m_rhi.newGraphicsPipeline()
@@ -230,19 +280,10 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.m_pipeline.setDepthTest(True)
         self.m_pipeline.setDepthWrite(True)
         # self.m_pipeline.setCullMode(QtGui.QRhiGraphicsPipeline.CullMode.Back)
-        self.m_pipeline.setShaderStages([
-            QtGui.QRhiShaderStage(QtGui.QRhiShaderStage.Vertex, self.vert_shader),
-            QtGui.QRhiShaderStage(QtGui.QRhiShaderStage.Fragment, self.frag_shader),
-        ])
+        self.m_pipeline.setShaderStages(shader_stages)
         inputLayout = QtGui.QRhiVertexInputLayout()
-        inputLayout.setBindings([
-            QtGui.QRhiVertexInputBinding(8 * 4)
-        ])
-        inputLayout.setAttributes([
-            QtGui.QRhiVertexInputAttribute(0, 0, QtGui.QRhiVertexInputAttribute.Float3, 0),
-            QtGui.QRhiVertexInputAttribute(0, 1, QtGui.QRhiVertexInputAttribute.Float3, 3 * 4),
-            QtGui.QRhiVertexInputAttribute(0, 2, QtGui.QRhiVertexInputAttribute.Float2, 6 * 4),
-        ])
+        inputLayout.setBindings([QtGui.QRhiVertexInputBinding(8 * 4)])
+        inputLayout.setAttributes(input_attributes)
         self.m_pipeline.setVertexInputLayout(inputLayout)
         self.m_pipeline.setShaderResourceBindings(self.m_srb)
         self.m_pipeline.setRenderPassDescriptor(self.renderTarget().renderPassDescriptor())
@@ -300,6 +341,11 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
             self.need_upload = False
 
         resourceUpdates.updateDynamicBuffer(self.m_ubuf, 0, ubuf_data.nbytes, ubuf_data)
+
+        if self.pipeline_kind != self.visual_kind:
+            self.m_pipeline.destroy()
+            self.m_srb.destroy()
+            self.create_pipeline(self.visual_kind)
 
         pipeline_dirty = False
 

@@ -1,6 +1,6 @@
 .SUFFIXES: .qsb
 
-objects = shaded.vert.qsb shaded.frag.qsb
+objects = texture.vert.qsb texture.frag.qsb color.vert.qsb color.frag.qsb
 
 shading_langs = --glsl 300es,140 --hlsl 50 --msl 12
 
