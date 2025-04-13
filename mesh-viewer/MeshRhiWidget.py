@@ -54,8 +54,8 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.m_sampler = None
         self.m_srb_texture = None
         self.m_pipeline_texture = None
-        self.m_srb_vertex = None
-        self.m_pipeline_vertex = None
+        self.m_srb_color = None
+        self.m_pipeline_color = None
 
         self.visual_kind = 'texture'
 
@@ -81,7 +81,7 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.m_rhi = None
 
         names = [
-            'pipeline_vertex', 'srb_vertex',
+            'pipeline_color', 'srb_color',
             'pipeline_texture', 'srb_texture',
             'sampler', 'texture',
             'ubuf', 'ibuf', 'vbuf'
@@ -179,7 +179,7 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
 
         self.visual_kind = visual.kind
 
-        if visual.kind == 'texture':
+        if visual.kind == 'texture':            # TextureVisuals
             self.vertex_data[:, 6:8] = visual.uv
             material = visual.material
             if not hasattr(material, 'image'):
@@ -190,8 +190,12 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
             else:
                 self.image_data.fill(QtGui.QColor(*material.main_color.tolist()))
 
-        elif visual.kind == 'vertex':
-            # this kind is actually quite rare
+            # it is possible for vertex colors to also be present in
+            # visual.vertex_attributes['color']
+            # the one sample that has been encountered has dtype float32
+
+        elif visual.kind in ['vertex', 'face']: # ColorVisuals
+            # face kind has not been encountered yet
             byte_view = self.vertex_data.view(np.uint8).reshape((-1, 8, 4))
             byte_view[:, 6, :] = visual.vertex_colors
 
@@ -199,7 +203,6 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
             # fill with white
             byte_view = self.vertex_data.view(np.uint8).reshape((-1, 8, 4))
             byte_view[:, 6, :] = (255, 255, 255, 255)
-            self.visual_kind = 'vertex'
 
         self.need_upload = True
         self.update()
@@ -233,7 +236,7 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         self.m_sampler.create()
 
         self.m_pipeline_texture, self.m_srb_texture = self.create_pipeline('texture')
-        self.m_pipeline_vertex, self.m_srb_vertex = self.create_pipeline('vertex')
+        self.m_pipeline_color, self.m_srb_color = self.create_pipeline('color')
 
     def create_pipeline(self, kind : str):
         SS = QtGui.QRhiShaderStage
@@ -345,7 +348,7 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
         if self.visual_kind == 'texture':
             pipeline = self.m_pipeline_texture
         else:
-            pipeline = self.m_pipeline_vertex
+            pipeline = self.m_pipeline_color
 
         pipeline_dirty = False
 
