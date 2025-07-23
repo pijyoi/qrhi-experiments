@@ -59,8 +59,8 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
 
         self.visual_kind = 'texture'
 
-        self.vert_texture_shader = load_shader("shaded.vert.qsb")
-        self.frag_texture_shader = load_shader("shaded.frag.qsb")
+        self.vert_texture_shader = load_shader("texture.vert.qsb")
+        self.frag_texture_shader = load_shader("texture.frag.qsb")
         self.vert_color_shader = load_shader("color.vert.qsb")
         self.frag_color_shader = load_shader("color.frag.qsb")
 
