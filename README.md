@@ -1,10 +1,16 @@
 Notes on running on Raspberry Pi 5
 ==================================
 
-Official Raspberry Pi OS Bookworm is used.
-
 To use vulkan, package "libvulkan-dev" needs to be installed.
 Qt tries to load the symbolic link libvulkan.so which is only installed by "libvulkan-dev".
+
+With Raspberry Pi OS Trixie, both opengl and vulkan run with no issues.
+
+The compute shader example needs to be executed with either --opengles or --api vulkan
+
+
+
+With Raspberry Pi OS Bookworm, the following issues were encountered.
 
 with default api (opengl), the following line shows and no window shows:
     qt.qpa.wayland: eglSwapBuffers failed with 0x300d, surface: 0x0
