@@ -185,7 +185,9 @@ class MeshRhiWidget(QtWidgets.QRhiWidget):
             if not hasattr(material, 'image'):
                 material = material.to_simple()
             if material.image is not None:
-                self.image_data = material.image.toqimage().mirrored()
+                qimg = material.image.toqimage()
+                # flipped() available since Qt 6.9.0
+                self.image_data = qimg.flipped() if hasattr(qimg, 'flipped') else qimg.mirrored()
                 self.image_data.convertTo(QtGui.QImage.Format.Format_RGBA8888)
             else:
                 self.image_data.fill(QtGui.QColor(*material.main_color.tolist()))
