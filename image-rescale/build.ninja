@@ -1,0 +1,2 @@
+build image-rescale/rescale.vert.qsb: qsb image-rescale/rescale.vert
+build image-rescale/rescale.frag.qsb: qsb image-rescale/rescale.frag

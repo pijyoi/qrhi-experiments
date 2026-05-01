@@ -1,0 +1,5 @@
+shading_langs = --glsl 310es,430 --hlsl 50 --msl 12
+
+build image-rescale-compute/texture.vert.qsb: qsb image-rescale-compute/texture.vert
+build image-rescale-compute/texture.frag.qsb: qsb image-rescale-compute/texture.frag
+build image-rescale-compute/rescale.comp.qsb: qsb image-rescale-compute/rescale.comp

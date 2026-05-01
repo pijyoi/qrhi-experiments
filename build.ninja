@@ -1,0 +1,10 @@
+shading_langs = --glsl 300es,140 --hlsl 50 --msl 12
+
+rule qsb
+  command = pyside6-qsb $shading_langs -o $out $in
+
+subninja image-rescale/build.ninja
+subninja image-rescale-compute/build.ninja
+subninja image-viewer/build.ninja
+subninja points-viewer/build.ninja
+subninja mesh-viewer/build.ninja

@@ -1,0 +1,2 @@
+build points-viewer/points.vert.qsb: qsb points-viewer/points.vert
+build points-viewer/points.frag.qsb: qsb points-viewer/points.frag

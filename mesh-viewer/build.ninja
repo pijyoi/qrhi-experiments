@@ -1,0 +1,4 @@
+build mesh-viewer/texture.vert.qsb: qsb mesh-viewer/texture.vert
+build mesh-viewer/texture.frag.qsb: qsb mesh-viewer/texture.frag
+build mesh-viewer/color.vert.qsb: qsb mesh-viewer/color.vert
+build mesh-viewer/color.frag.qsb: qsb mesh-viewer/color.frag

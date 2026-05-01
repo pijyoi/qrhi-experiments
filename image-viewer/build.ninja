@@ -1,0 +1,2 @@
+build image-viewer/texture.vert.qsb: qsb image-viewer/texture.vert
+build image-viewer/texture.frag.qsb: qsb image-viewer/texture.frag
